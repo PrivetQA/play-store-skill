@@ -50,6 +50,18 @@ Act as soon as the target below is on screen. Do not dump the whole tree first, 
 
 A different device model can use different view ids and widget classes. The sign-in screens stay the same. Match the visible text on that screen. Do not reuse a view id, a class, or a tap point from another model. Confirm the node on this screen before the tap.
 
+One action per screen. Do not tap that control again until the screen changes.
+
+**Loading** or **indeterminate** means the buttons still listed are from the previous page. Do not tap them. Wait.
+
+**Checking info…** can stay while the next button is already there. Act on that button.
+
+A UIAutomator dump is slow. Take one when the screen changes during sign-in. Do not take one on every download percent. The accessibility tree does not show this sign-in WebView. These screens come from UIAutomator.
+
+If **Show password** or **Enter a password** is on screen, it is the password page, even when **Forgot email?** is still listed. Do not treat it as the email page.
+
+Clear the password field, then type once. If the masked length is not the password length, clear it and type once more. On a 540×1200 model, a **Next** whose center sits at the bottom is under the keyboard. That tap types a key. Submit with `input keyevent 66`, or tap **Next** only when its center is above the keyboard.
+
 `com.android.vending:id/0_resource_name_obfuscated` is on almost every Play Store node. It is not a target.
 
 Type email, password, and the code with one `adb shell input text` into the field that is already focused. Do not type them key by key. Send `@` as `@`. A backslash before `@` is typed into this field. Replace a space with `%s`.
@@ -67,15 +79,15 @@ Before `action.tap`, confirm the xpath matches a node. A tap with no match hits 
 | `//node[@text='Sign in' and @class='android.widget.Button']` | Tap it. On **Updating Google apps…** this button is already there. Do not wait for the update. Do not tap **Cancel updates**. On a 540×1200 model this button is missing from the accessibility tree and present in UIAutomator at physical pixels. `action.tap` halves those bounds and misses. Tap `input tap` at the node center. |
 | `headingText` text is `Sign in with ease` | Tap `//node[@text='Skip' and @class='android.widget.Button']`. Do not tap Next. |
 | `identifierId` | Do not tap the field. Input the email once into the focused field. Tap Next only when the screen shows one address, with `@` and no backslash. Never tap `learnMore`. |
-| An `EditText` with no view id, and `selectionc6` (`Show password`) | Tap `//node[@class='android.widget.EditText']`, input the password, tap Next. Do not tap `selectionc6`. |
+| An `EditText` with no view id, and `selectionc6` (`Show password`) or **Enter a password** | This wins over **Forgot email?**. Clear the field, tap the `EditText`, type the password once. If the masked length differs, clear and type once more. Then Next, above the keyboard. Do not tap `selectionc6`. |
 | `2-Step Verification` and **Check your phone** | The button is **Try another way**. Find it in the full UIAutomator node list. A shortened screen summary hides it. Tap that node. Do not tap **Yes** or **Resend it**. Do not open the app page from this screen. |
-| A node whose text is exactly `Google Authenticator` | If the keyboard is open, close it with Back (`input keyevent 4`). Escape does not close it. Then tap the clickable row that contains that text. On the 540×1200 model that row is the `View` around y 768–881. Do not tap a zero-height text fragment. Do not tap the phone-code row `Use your phone or tablet to get a security code`. |
+| A node whose text is exactly `Google Authenticator` | Tap the clickable row that contains that text. On the 540×1200 model that row is the `View` around y 768–881. Press Back (`input keyevent 4`) only when the keyboard covers that row. Escape does not close it. Do not tap a zero-height text fragment. Do not tap the phone-code row `Use your phone or tablet to get a security code`. |
 | `totpPin` | Input the code from the 2FA token, tap Next. |
 | `I agree` | Tap `//node[@text='I agree' and @class='android.widget.Button']`. Do not tap the Terms or Privacy links. |
 | `Selfie for sign in` or `Add a selfie, just in case` | Tap the `Button` whose text is exactly `Not now`: `//node[@text='Not now' and @class='android.widget.Button']`. Confirm the xpath matches that button before the tap. A tap with no match hits the bottom-right button, which is **Continue** (seen at 585,1404). Never tap **Continue**. |
 | `Can’t begin video verification` | Tap `//node[@text='Cancel']`. Do not tap **Try again**. |
 | `Google services` with **More** | Tap `//node[@text='More']`. Do not change the Backup switch. |
-| `Google services` with **Accept** and no **Cancel** | Tap `//node[@text='Accept' and @class='android.widget.Button']`. Do not change the Backup switch. |
+| `Google services` with **Accept** and no **Cancel** | Tap `//node[@text='Accept' and @class='android.widget.Button']`. **Show more** is not **More**. Do not change the Backup switch. |
 | `Welcome to Google Play` and **Get started** | Tap `//node[@text='Get started' and @class='android.widget.TextView']`. It is a `TextView`, not a `Button`. |
 | `Make purchases in seconds` with **Skip** and **Continue** | Tap `//node[@text='Skip' and @class='android.widget.TextView']`. Do not tap **Continue**. |
 | `Level up your experience` with **Not now** and **I'm in!** | Tap `//node[@text='Not now' and @class='android.widget.TextView']`. Do not tap **I'm in!**. |
@@ -91,11 +103,11 @@ If Play is already signed in, skip this section and install.
 
 Signed in means Play is in front and the signed-out gate is gone. That gate is the screen **Sign in to find the latest Android apps**. Tabs such as **Games**, **Apps**, **Search**, and **You**, or an app sheet on top of them, mean the account is in. A node that merely says **Sign in** does not mean the gate is back. Do not start sign-in again.
 
-1. `adb shell am start -a android.intent.action.VIEW -d market://details?id=PACKAGE`. Signed out, this is the Sign in gate. Run the same command again after sign-in.
+1. `adb shell am start -a android.intent.action.VIEW -d market://details?id=PACKAGE`. Signed out, this is the Sign in gate. After sign-in, open that page only if it is not already showing. If **Install** is already on that app's page, tap it. Do not open the page again.
 2. Tap **Sign in**.
 3. Tap **Skip**.
 4. Confirm the email screen (`identifierId`, **Forgot email?**, **Create account**). Do not tap the field. Input the email once, with `@` and no backslash. Tap **Next** only when the screen shows that one address. If the email page is still open after that Next, stop.
-5. Input the password into the empty `EditText`. Tap **Next**.
+5. On **Show password** or **Enter a password**, clear the `EditText`, type the password once, then **Next** above the keyboard. If the email page is still open after its own Next, stop.
 6. On **Check your phone**, tap **Try another way**. Find that button in the full node list. Then tap the node whose text is exactly **Google Authenticator**. Do not open the app page until sign-in is finished.
 7. Generate the code and input it into `totpPin`. Tap **Next**.
 
@@ -105,11 +117,11 @@ PASTE_2FA_TOKEN
 EOF
 ```
 
-Generate it immediately before the input. If less than five seconds remain in the 30-second window, wait for the next code.
+Generate it immediately before the input. If less than five seconds remain in the 30-second window, wait for the next code. If `scripts/totp.py` is not on disk, generate that same code in process. Do not stop because the helper path is missing.
 
 8. Tap **I agree**.
 9. On **Add a selfie, just in case**, tap the **Not now** button. Never tap **Continue**. If **Can’t begin video verification** appears, tap **Cancel**.
-10. On **Google services**, tap **More** when that button is on screen, then **Accept** when **Cancel** is absent. Do not change the Backup switch.
+10. On **Google services**, tap **More** when that button is on screen, then **Accept** when **Cancel** is absent. **Show more** is not **More**. Do not change the Backup switch.
 11. On **Welcome to Google Play**, tap **Get started**.
 12. On **Make purchases in seconds**, tap **Skip**. Do not tap **Continue**.
 13. On **Level up your experience**, tap **Not now**. Do not tap **I'm in!**.
@@ -168,5 +180,6 @@ On that page:
 - A price means the app is paid. Do not buy it. Tell the person.
 - Already installed: say so. Do not install again.
 - The package has no page: say it was not found. Do not pick a substitute.
-- Otherwise tap the node whose text is `Install` on that app's page. Confirm that one node before the tap. Its class may be `Button` or `TextView`. A percent on the page means the download has started. If Play asks for the account password, input it the same way as the sign-in password.
-- Finished when `pm path PACKAGE` prints `package:` and the page shows **Open**. A percent is not finished.
+- Otherwise tap the node whose text is exactly `Install` on that app's page, once. Confirm that one node before the tap. Its class may be `Button`, `TextView`, or `View`. Do not tap it again.
+- **Pending**, a percent, or **Installing** means the download has started. Poll `pm path PACKAGE`. Do not dump the UI on each poll. If the launcher is in front, open the same market link again. If Play asks for the account password, input it the same way as the sign-in password.
+- Finished when `pm path PACKAGE` prints `package:` and that app's page shows **Open**. A percent is not finished. **Open** on the launcher is not this button.
