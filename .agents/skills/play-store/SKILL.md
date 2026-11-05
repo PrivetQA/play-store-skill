@@ -74,15 +74,18 @@ Before `action.tap`, confirm the xpath matches a node. A tap with no match hits 
 
 `Next` on every sign-in page is `//node[@text='Next' and @class='android.widget.Button']`.
 
+If the button this step needs is not visible, the keyboard is covering it. Press Back once (`input keyevent 4`) to close the keyboard, dump the screen again, and tap that button. Do this on every sign-in screen. Escape does not close the keyboard. `mInputShown=false` does not mean the keyboard is gone. If the button is already visible, do not press Back. Press Back only once for that button. If it is still missing, stop and ask.
+
 | When this is on screen | Do this |
 | --- | --- |
 | `//node[@text='Sign in' and @class='android.widget.Button']` | Tap it. On **Updating Google apps…** this button is already there. Do not wait for the update. Do not tap **Cancel updates**. On a 540×1200 model this button is missing from the accessibility tree and present in UIAutomator at physical pixels. `action.tap` halves those bounds and misses. Tap `input tap` at the node center. |
 | `headingText` text is `Sign in with ease` | Tap `//node[@text='Skip' and @class='android.widget.Button']`. Do not tap Next. |
 | `identifierId` | Do not tap the field. Input the email once into the focused field. Tap Next only when the screen shows one address, with `@` and no backslash. Never tap `learnMore`. |
-| An `EditText` with no view id, and `selectionc6` (`Show password`) or **Enter a password** | This wins over **Forgot email?**. Clear the field, tap the `EditText`, type the password once. If the masked length differs, clear and type once more. Then Next, above the keyboard. Do not tap `selectionc6`. |
+| An `EditText` with no view id, and `selectionc6` (`Show password`) or **Enter a password** | This wins over **Forgot email?**. Clear the field, tap the `EditText`, type the password once. If the masked length differs, clear and type once more. Then **Next**. If **Next** is not visible, press Back once to close the keyboard, then tap **Next**. Do not tap `selectionc6`. |
 | `2-Step Verification` and **Check your phone** | The button is **Try another way**. Find it in the full UIAutomator node list. A shortened screen summary hides it. Tap that node. Do not tap **Yes** or **Resend it**. Do not open the app page from this screen. |
-| A node whose text is exactly `Google Authenticator` | Tap the clickable row that contains that text. On the 540×1200 model that row is the `View` around y 768–881. Press Back (`input keyevent 4`) only when the keyboard covers that row. Escape does not close it. Do not tap a zero-height text fragment. Do not tap the phone-code row `Use your phone or tablet to get a security code`. |
-| `totpPin` | Input the code from the 2FA token, tap Next. |
+| 2-Step Verification chooser, and no node whose text is exactly `Google Authenticator` | That row is the button this step needs, and it is not visible. Press Back once to close the keyboard, then tap the row. |
+| A node whose text is exactly `Google Authenticator` on the chooser, not inside a sentence | Tap the clickable row that contains that text. On the 540×1200 model that row is the `View` around y 768–881. Do not tap a zero-height text fragment. Do not tap the phone-code row `Use your phone or tablet to get a security code`. The row is visible, so do not press Back. |
+| `totpPin`, **Enter code**, or **Get a verification code from the Google Authenticator app** | This is the code page. The words Google Authenticator here are a sentence, not the chooser row. Do not tap them. Do not press Back. Input the code from the 2FA token, tap Next. |
 | `I agree` | Tap `//node[@text='I agree' and @class='android.widget.Button']`. Do not tap the Terms or Privacy links. |
 | `Selfie for sign in` or `Add a selfie, just in case` | Tap the `Button` whose text is exactly `Not now`: `//node[@text='Not now' and @class='android.widget.Button']`. Confirm the xpath matches that button before the tap. A tap with no match hits the bottom-right button, which is **Continue** (seen at 585,1404). Never tap **Continue**. |
 | `Can’t begin video verification` | Tap `//node[@text='Cancel']`. Do not tap **Try again**. |
@@ -95,7 +98,7 @@ Before `action.tap`, confirm the xpath matches a node. A tap with no match hits 
 | A node whose text is exactly `No, thanks` | Tap that node, on every screen where it appears, including **Want to see local recommendations in Google Play?**. Do not tap **Continue**. |
 | `//node[@text='Install']` | Tap it. It is a `TextView` with no view id. |
 
-If the screen is one of these and its target is missing, stop and ask the person. Save the correction in `corrections`.
+If the screen is one of these and its button is not visible, press Back once to close the keyboard and look again. If the button is still missing, stop and ask the person. Save the correction in `corrections`.
 
 ## Sign-in
 
@@ -107,9 +110,9 @@ Signed in means Play is in front and the signed-out gate is gone. That gate is t
 2. Tap **Sign in**.
 3. Tap **Skip**.
 4. Confirm the email screen (`identifierId`, **Forgot email?**, **Create account**). Do not tap the field. Input the email once, with `@` and no backslash. Tap **Next** only when the screen shows that one address. If the email page is still open after that Next, stop.
-5. On **Show password** or **Enter a password**, clear the `EditText`, type the password once, then **Next** above the keyboard. If the email page is still open after its own Next, stop.
-6. On **Check your phone**, tap **Try another way**. Find that button in the full node list. Then tap the node whose text is exactly **Google Authenticator**. Do not open the app page until sign-in is finished.
-7. Generate the code and input it into `totpPin`. Tap **Next**.
+5. On **Show password** or **Enter a password**, clear the `EditText`, type the password once, then tap **Next**. If **Next** is not visible, press Back once to close the keyboard, then tap it. If the email page is still open after its own Next, stop.
+6. On **Check your phone**, tap **Try another way**. Find that button in the full node list. On the chooser, tap the row whose text is exactly **Google Authenticator**. If that row is not visible, press Back once to close the keyboard, then tap the row. If the row is already visible, do not press Back. Do not open the app page until sign-in is finished.
+7. On `totpPin` / **Enter code**, generate the code and input it. The sentence **Get a verification code from the Google Authenticator app** is this page, not the chooser. Tap **Next**. Do not press Back.
 
 ```bash
 python3 .cursor/skills/play-store/scripts/totp.py <<'EOF'
@@ -180,6 +183,9 @@ On that page:
 - A price means the app is paid. Do not buy it. Tell the person.
 - Already installed: say so. Do not install again.
 - The package has no page: say it was not found. Do not pick a substitute.
+- **Complete account setup** with **Continue** and no payment list: tap **Continue**.
+- **Add a payment option to complete your account** with **Skip**: tap **Skip**. Do not tap **Add card**, **Add PayPal**, **Add PaysafeCard**, **Add Orange billing**, or **Redeem code**.
+- **Link your Google services?** with **Get started**: press the device Back button once. If that sheet is still there, wait 2 seconds, tap **Get started**, then press the device Back button again.
 - Otherwise tap the node whose text is exactly `Install` on that app's page, once. Confirm that one node before the tap. Its class may be `Button`, `TextView`, or `View`. Do not tap it again.
 - **Pending**, a percent, or **Installing** means the download has started. Poll `pm path PACKAGE`. Do not dump the UI on each poll. If the launcher is in front, open the same market link again. If Play asks for the account password, input it the same way as the sign-in password.
 - Finished when `pm path PACKAGE` prints `package:` and that app's page shows **Open**. A percent is not finished. **Open** on the launcher is not this button.
