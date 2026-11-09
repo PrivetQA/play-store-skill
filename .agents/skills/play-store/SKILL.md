@@ -52,7 +52,9 @@ A different device model can use different view ids and widget classes. The sign
 
 One action per screen. Do not tap that control again until the screen changes.
 
-**Loading** or **indeterminate** means the buttons still listed are from the previous page. Do not tap them. Wait.
+**Are you trying to sign in?** can appear at any moment: during sign-in, after it, over Play, or over another app. Tap **Yes, it's me**. Never tap **No, don't allow**. If the sheet is still there, the tap missed. Tap **Yes, it's me** again. This is not the **Yes** on **Check your phone**.
+
+**Loading** or **indeterminate** means the buttons still listed are from the previous page. Do not tap them, including **I agree** and **Accept**. Wait until Loading is gone. **Yes, it's me** on **Are you trying to sign in?** is the current sheet, not a leftover button. Tap it.
 
 **Checking info…** can stay while the next button is already there. Act on that button.
 
@@ -74,7 +76,11 @@ Before `action.tap`, confirm the xpath matches a node. A tap with no match hits 
 
 `Next` on every sign-in page is `//node[@text='Next' and @class='android.widget.Button']`.
 
-If the button this step needs is not visible, the keyboard is covering it. Press Back once (`input keyevent 4`) to close the keyboard, dump the screen again, and tap that button. Do this on every sign-in screen. Escape does not close the keyboard. `mInputShown=false` does not mean the keyboard is gone. If the button is already visible, do not press Back. Press Back only once for that button. If it is still missing, stop and ask.
+During sign-in, do not minimize Play. Tapping the system navigation bar minimizes it. Pressing Back while the keyboard is closed leaves the app. Both are bugs. Back (`input keyevent 4`) is only for an open keyboard, and that press only closes the keyboard.
+
+Play can leave for the launcher on its own. That is normal. When `topResumedActivity` is the launcher, open `market://details?id=PACKAGE` again and continue from the Play screen that comes back. Do not start the sign-in steps over, and do not stop because that screen is an earlier page. If the dump lists **Home screen** while `com.android.vending` is still resumed, Play did not close. Wait, and do not send the link.
+
+If the button this step needs is not visible, the keyboard is covering it. Press Back once only while the keyboard is open, then tap the button. Do not press Back when the keyboard is closed. Do not send the market link while Play is still in front. This includes the 2FA rows **Try another way** and **Google Authenticator**. Escape does not close the keyboard. `mInputShown=false` does not mean the keyboard is gone. If the button is already visible, do not press Back. Press Back only once for that button. If it is still missing and the keyboard is closed, stop and ask.
 
 | When this is on screen | Do this |
 | --- | --- |
@@ -82,7 +88,7 @@ If the button this step needs is not visible, the keyboard is covering it. Press
 | `headingText` text is `Sign in with ease` | Tap `//node[@text='Skip' and @class='android.widget.Button']`. Do not tap Next. |
 | `identifierId` | Do not tap the field. Input the email once into the focused field. Tap Next only when the screen shows one address, with `@` and no backslash. Never tap `learnMore`. |
 | An `EditText` with no view id, and `selectionc6` (`Show password`) or **Enter a password** | This wins over **Forgot email?**. If the keyboard is closed, one tap in the `EditText`, then one more in the same rectangle only if it stays closed. Clear the field and send the password with one `input text`. Do not type it key by key. If the masked length differs, clear and `input text` once more. If it still differs, repeat the whole sign-in once. Then **Next**. If **Next** is not visible, press Back once to close the keyboard, then tap **Next**. Do not tap `selectionc6`. |
-| **Are you trying to sign in?** with **Yes, it's me** | Tap `//node[@text="Yes, it's me" and @class='android.widget.Button']`. Do not tap **No, don't allow**. Do not open the app page from this screen. This is not the **Yes** on **Check your phone**. |
+| **Are you trying to sign in?** with **Yes, it's me** | This sheet can cover any step, including another app. Tap `//node[@text="Yes, it's me" and @class='android.widget.Button']`. Do not tap **No, don't allow**. Do not open the app page from this screen. If the sheet is still there, tap **Yes, it's me** again. This is not the **Yes** on **Check your phone**. |
 | `2-Step Verification` and **Check your phone** | The button is **Try another way**. Find it in the full UIAutomator node list. A shortened screen summary hides it. Tap that node. Do not tap **Yes** or **Resend it**. Do not open the app page from this screen. |
 | 2-Step Verification chooser, and no node whose text is exactly `Google Authenticator` | That row is the button this step needs, and it is not visible. Press Back once to close the keyboard, then tap the row. |
 | A node whose text is exactly `Google Authenticator` on the chooser, not inside a sentence | Tap the clickable row that contains that text. On the 540×1200 model that row is the `View` around y 768–881. Do not tap a zero-height text fragment. Do not tap the phone-code row `Use your phone or tablet to get a security code`. The row is visible, so do not press Back. |
@@ -108,10 +114,10 @@ If Play is already signed in, skip this section and install.
 Signed in means Play is in front and the signed-out gate is gone. That gate is the screen **Sign in to find the latest Android apps**. Tabs such as **Games**, **Apps**, **Search**, and **You**, or an app sheet on top of them, mean the account is in. A node that merely says **Sign in** does not mean the gate is back. Do not start sign-in again.
 
 1. `adb shell am start -a android.intent.action.VIEW -d market://details?id=PACKAGE`. Signed out, this is the Sign in gate. After sign-in, open that page only if it is not already showing. If **Install** is already on that app's page, tap it. Do not open the page again.
-2. Tap **Sign in**.
+2. Tap **Sign in**. If **Are you trying to sign in?** appears here or at any later step, tap **Yes, it's me** before doing anything else.
 3. Tap **Skip**.
 4. Confirm the email screen (`identifierId`, **Forgot email?**, **Create account**). Do not tap the field. Input the email once, with `@` and no backslash. Tap **Next** only when the screen shows that one address. If the email page is still open after that Next, stop.
-5. On **Show password** or **Enter a password**, focus the `EditText` (one tap, then one more in the same rectangle only if the keyboard stays closed). Clear it and send the password with one `input text`, not key by key. If the masked length differs, clear and `input text` once more. Then tap **Next**. If **Next** is not visible, press Back once to close the keyboard, then tap it. If the email page is still open after its own Next, stop.
+5. On **Show password** or **Enter a password**, clear the `EditText`, type the password once, then tap **Next**. If **Next** is not visible, press Back once to close the keyboard, then tap it. If the email page is still open after its own Next, stop.
 6. On **Check your phone**, tap **Try another way**. Find that button in the full node list. On the chooser, tap the row whose text is exactly **Google Authenticator**. If that row is not visible, press Back once to close the keyboard, then tap the row. If the row is already visible, do not press Back. Do not open the app page until sign-in is finished.
 7. On `totpPin` / **Enter code**, generate the code and input it. The sentence **Get a verification code from the Google Authenticator app** is this page, not the chooser. Tap **Next**. Do not press Back.
 
@@ -133,6 +139,8 @@ Generate it immediately before the input. If less than five seconds remain in th
 15. Whenever **No, thanks** is on screen, tap it. Do not tap **Continue**.
 
 Sign-in is finished when that signed-out gate is gone and Play is in front. Then install. Find the app by a package link or by its title. Either way is enough. Do not treat one app's sheet as the proof of login, and do not look for a particular app before calling login done.
+
+If the dump lists **Home screen** during sign-in, check `topResumedActivity`. When Play is still resumed, wait. When the launcher is resumed, Play left on its own. Open the same market link again and continue from the Play screen that appears. Do not go back to the first sign-in step, and do not treat that screen as a failed login.
 
 A picture or a checkbox after any **Next** is a captcha. Handle it, then continue with the next target. `totpPin` is not a captcha.
 
@@ -177,6 +185,8 @@ am start -a android.intent.action.VIEW -d market://details?id=PACKAGE
 
 Run that with `adb_shell` on the automation session.
 
+After that link, a dump can still list the launcher — **Home screen**, Google Go, Search — while Play is already in front. That dump does not mean Play closed. Read `dumpsys activity activities` and look for `topResumedActivity`. When it contains `com.android.vending`, do not send the link again. Wait for the Play page. Send the link again only when the resumed activity is the launcher.
+
 A title is a normal case, not a fallback for one app. When there is no package, open Play search and use the title. If more than one result can be installed, ask which one. Do not install the first.
 
 On that page:
@@ -186,7 +196,8 @@ On that page:
 - The package has no page: say it was not found. Do not pick a substitute.
 - **Complete account setup** with **Continue** and no payment list: tap **Continue**.
 - **Add a payment option to complete your account** with **Skip**: tap **Skip**. Do not tap **Add card**, **Add PayPal**, **Add PaysafeCard**, **Add Orange billing**, or **Redeem code**.
-- **Link your Google services?** with **Get started**: press the device Back button once. If that sheet is still there, wait 2 seconds, tap **Get started**, then press the device Back button again.
+- **Link your Google services?** with **Get started**: press the device Back button once. If that sheet is still there, wait 2 seconds, tap **Get started**, then press the device Back button again. If that Back leaves Play and the launcher is resumed, do not press Back again. Open the market link and continue from the screen Play shows.
 - Otherwise tap the node whose text is exactly `Install` on that app's page, once. Confirm that one node before the tap. Its class may be `Button`, `TextView`, or `View`. Do not tap it again.
-- **Pending**, a percent, or **Installing** means the download has started. Poll `pm path PACKAGE`. Do not dump the UI on each poll. If the launcher is in front, open the same market link again. If Play asks for the account password, input it the same way as the sign-in password.
-- Finished when `pm path PACKAGE` prints `package:` and that app's page shows **Open**. A percent is not finished. **Open** on the launcher is not this button.
+- **Pending**, a percent, or **Installing** means the download has started. Poll `pm path PACKAGE`. Do not dump the UI on each poll. Open the same market link again only when `topResumedActivity` is the launcher. A dump that still lists **Home screen** while `com.android.vending` is resumed is not that case. If Play asks for the account password, input it the same way as the sign-in password.
+- **Open** on that app's page is tapped once, with a finger on that node. If the page is still there, do not tap **Open** again. Start the installed app: `am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p PACKAGE`.
+- Finished when `pm path PACKAGE` prints `package:` and either that app is the resumed activity or its page showed **Open** and the launcher intent above was sent. A percent is not finished. **Open** on the launcher is not this button.
